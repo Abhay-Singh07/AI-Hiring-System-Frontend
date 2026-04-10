@@ -3,6 +3,7 @@ import requests
 import time
 import pandas as pd
 import json
+import plotly.express as px
 
 st.set_page_config(page_title="GenAI ATS", layout="wide")
 
@@ -69,9 +70,26 @@ if st.button("Analyze Candidates"):
             for c in ranking
         ])
 
-        st.bar_chart(df.set_index("Candidate"))
+        fig = px.bar(
+            df,
+            x="Candidate",
+            y="Score",
+            text="Score",
+            color="Score",
+            color_continuous_scale="Blues",
+            title="Candidate Score Comparison"
+        )
 
-        st.header(" Candidate Ranking")
+        fig.update_traces(textposition='outside')
+        fig.update_layout(
+            xaxis_title="Candidate",
+            yaxis_title="Score (%)",
+            yaxis=dict(range=[0, 100])
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.header("🏆 Candidate Ranking")
 
         for idx, candidate in enumerate(ranking, start=1):
 
@@ -88,28 +106,37 @@ if st.button("Analyze Candidates"):
             decision = analysis.get("selection_decision", "N/A")
 
             if decision == "Selected":
-                st.success(f" {decision}")
+                st.success(f"✅ {decision}")
             elif decision == "Borderline":
-                st.warning(f" {decision}")
+                st.warning(f"⚠️ {decision}")
             else:
-                st.error(f" {decision}")
+                st.error(f"❌ {decision}")
 
             with st.expander("View Full Analysis"):
 
-                st.write("###  Summary")
+                st.write("### 🧠 Summary")
                 st.write(analysis.get("summary", ""))
 
-                st.write("###  Matched Skills")
+                st.write("### 🎯 Matched Skills")
                 st.write(analysis.get("matched_skills", []))
 
-                st.write("###  Missing Skills")
+                st.write("### ❌ Missing Skills")
                 st.write(analysis.get("missing_skills", []))
 
-                st.write("###  Score Breakdown")
+                st.write("### 📊 Score Breakdown")
                 st.json(analysis.get("score_breakdown", {}))
 
-                st.write("###  Feedback")
+                st.write("### 💡 Feedback")
                 st.write(analysis.get("resume_feedback", ""))
+
+                st.write("### 🧾 Decision Reasoning")
+                reasoning = analysis.get("decision_reasoning", [])
+
+                if reasoning:
+                    for point in reasoning:
+                        st.write(f"- {point}")
+                else:
+                    st.write("No reasoning provided.")
 
         st.download_button(
             "📥 Download Results",
